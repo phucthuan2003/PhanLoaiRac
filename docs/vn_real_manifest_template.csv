@@ -1,0 +1,4 @@
+path,vn_class_id,item_name,is_dirty,bg_type,is_vn_specific,annotator,annotator2_vn_class_id
+sv1/hop_xop_com_tam_01.jpg,2,hop_xop_com_tam,1,simple,1,SV1,2
+sv2/chai_nuoc_lavie_03.jpg,0,chai_nhua_nuoc,0,cluttered,0,SV2,0
+sv3/ly_tra_sua_nhua_02.jpg,2,ly_tra_sua_dinh_ban,1,simple,1,SV3,2

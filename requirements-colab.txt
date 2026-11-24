@@ -1,0 +1,2 @@
+# Colab đã có sẵn torch, torchvision, numpy, pandas, pillow, scikit-learn, matplotlib, pytest.
+timm>=1.0

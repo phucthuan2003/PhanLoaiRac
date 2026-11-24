@@ -1,0 +1,118 @@
+dataset,orig_label,nhom,mo_ho,ghi_chu
+rhw,aerosol_cans,nguy_hai,1,Bình xịt còn áp suất/hoá chất - kiểm tra hướng dẫn địa phương
+rhw,aluminum_food_cans,tai_che,0,
+rhw,aluminum_soda_cans,tai_che,0,
+rhw,cardboard_boxes,tai_che,0,
+rhw,cardboard_packaging,tai_che,0,
+rhw,clothing,tai_che,1,Quần áo cũ: tái sử dụng
+rhw,coffee_grounds,thuc_pham,0,
+rhw,disposable_plastic_cutlery,khac,1,Dao nĩa nhựa dùng một lần thường bẩn
+rhw,eggshells,thuc_pham,0,
+rhw,food_waste,thuc_pham,0,
+rhw,glass_beverage_bottles,tai_che,0,
+rhw,glass_cosmetic_containers,tai_che,0,
+rhw,glass_food_jars,tai_che,0,
+rhw,magazines,tai_che,0,
+rhw,newspaper,tai_che,0,
+rhw,office_paper,tai_che,0,
+rhw,paper_cups,khac,1,Cốc giấy có lớp tráng nhựa - vùng xám
+rhw,plastic_cup_lids,tai_che,1,Nắp nhựa nhỏ - vùng xám
+rhw,plastic_detergent_bottles,tai_che,0,
+rhw,plastic_food_containers,tai_che,1,Hộp nhựa đựng thức ăn: tái chế nếu sạch
+rhw,plastic_shopping_bags,tai_che,1,Túi nilon = nhựa mềm -> nhóm tái chế theo HD kỹ thuật kèm CV 9368/BTNMT-KSONMT (2023); chỉ khi sạch
+rhw,plastic_soda_bottles,tai_che,0,
+rhw,plastic_straws,khac,0,
+rhw,plastic_trash_bags,khac,0,
+rhw,plastic_water_bottles,tai_che,0,
+rhw,shoes,tai_che,1,Giày cũ: tái sử dụng
+rhw,steel_food_cans,tai_che,0,
+rhw,styrofoam_cups,khac,0,
+rhw,styrofoam_food_containers,khac,0,
+rhw,tea_bags,thuc_pham,0,
+gd,battery,nguy_hai,0,
+gd,biological,thuc_pham,0,
+gd,cardboard,tai_che,0,
+gd,clothes,tai_che,1,Quần áo cũ: tái sử dụng
+gd,glass,tai_che,0,
+gd,metal,tai_che,0,
+gd,paper,tai_che,0,
+gd,plastic,tai_che,0,
+gd,shoes,tai_che,1,Giày cũ: tái sử dụng
+gd,trash,khac,1,Lớp lẫn cả ảnh bãi rác nhiều vật
+trashnet,cardboard,tai_che,0,
+trashnet,glass,tai_che,0,
+trashnet,metal,tai_che,0,
+trashnet,paper,tai_che,0,
+trashnet,plastic,tai_che,0,
+trashnet,trash,khac,0,
+nextech,battery,nguy_hai,0,
+nextech,e-waste,tai_che,1,Thiết bị điện/điện tử thải bỏ là nhóm con của nhóm tái chế theo CV 9368 (pin thì tách riêng)
+nextech,food-waste,thuc_pham,0,
+nextech,garden-waste,khac,1,Lá cây/cành không thuộc 2 nhóm con của chất thải thực phẩm (CV 9368) - kiểm tra hướng dẫn địa phương
+nextech,other-organic,thuc_pham,1,
+nextech,glass,tai_che,0,
+nextech,metal,tai_che,0,
+nextech,paper,tai_che,0,
+nextech,plastic,tai_che,0,
+nextech,textile_fabric,tai_che,1,Vải cũ: tái sử dụng
+nextech,trash,khac,0,Bộ gốc xếp vào recyclable - đã sửa theo luật VN
+taco,Aluminium foil,tai_che,1,Giấy bạc thường dính thức ăn
+taco,Battery,nguy_hai,0,
+taco,Aluminium blister pack,khac,1,Vỉ thuốc nhôm
+taco,Carded blister pack,khac,1,
+taco,Other plastic bottle,tai_che,0,
+taco,Clear plastic bottle,tai_che,0,
+taco,Glass bottle,tai_che,0,
+taco,Plastic bottle cap,tai_che,1,
+taco,Metal bottle cap,tai_che,0,
+taco,Broken glass,khac,1,Thuỷ tinh vỡ: gói riêng tránh gây thương tích
+taco,Food Can,tai_che,0,
+taco,Aerosol,nguy_hai,1,
+taco,Drink can,tai_che,0,
+taco,Toilet tube,tai_che,0,
+taco,Other carton,tai_che,0,
+taco,Egg carton,tai_che,0,
+taco,Drink carton,tai_che,1,Vỏ hộp sữa giấy (Tetra Pak)
+taco,Corrugated carton,tai_che,0,
+taco,Meal carton,khac,1,Hộp giấy đựng đồ ăn thường bẩn
+taco,Pizza box,khac,1,
+taco,Paper cup,khac,1,
+taco,Disposable plastic cup,khac,1,
+taco,Foam cup,khac,0,
+taco,Glass cup,tai_che,1,
+taco,Other plastic cup,khac,1,
+taco,Food waste,thuc_pham,0,
+taco,Glass jar,tai_che,0,
+taco,Plastic lid,tai_che,1,
+taco,Metal lid,tai_che,0,
+taco,Other plastic,khac,1,
+taco,Magazine paper,tai_che,0,
+taco,Tissues,khac,0,
+taco,Wrapping paper,tai_che,1,
+taco,Normal paper,tai_che,0,
+taco,Paper bag,tai_che,0,
+taco,Plastified paper bag,khac,1,
+taco,Plastic film,khac,0,
+taco,Six pack rings,khac,1,
+taco,Garbage bag,khac,0,
+taco,Other plastic wrapper,khac,0,
+taco,Single-use carrier bag,khac,1,Túi nilon
+taco,Polypropylene bag,khac,1,
+taco,Crisp packet,khac,0,
+taco,Spread tub,tai_che,1,
+taco,Tupperware,tai_che,0,
+taco,Disposable food container,khac,1,
+taco,Foam food container,khac,0,
+taco,Other plastic container,tai_che,1,
+taco,Plastic glooves,khac,0,
+taco,Plastic utensils,khac,0,
+taco,Pop tab,tai_che,0,
+taco,Rope & strings,khac,0,
+taco,Scrap metal,tai_che,0,
+taco,Shoe,tai_che,1,
+taco,Squeezable tube,khac,0,
+taco,Plastic straw,khac,0,
+taco,Paper straw,khac,0,
+taco,Styrofoam piece,khac,0,
+taco,Unlabeled litter,khac,1,Không rõ loại
+taco,Cigarette,khac,0,

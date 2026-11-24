@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+# dữ liệu và kết quả không đưa lên git
+*.zip
+*.pth
+*.pt
+*.npz
+_cache/
+runs/
+results/
+checkpoints/*
+!checkpoints/.gitkeep
+vn_real/
+manifest*.csv
+report.txt
+.ipynb_checkpoints/
+.DS_Store
