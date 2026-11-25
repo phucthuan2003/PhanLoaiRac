@@ -89,6 +89,7 @@ def main(argv=None):
     ap.add_argument('--patience', type=int, default=5, help='early stopping (tính trong giai đoạn fine-tune)')
     ap.add_argument('--workers', type=int, default=None)
     ap.add_argument('--device', default='auto')
+    ap.add_argument('--allow_cpu', action='store_true', help='cho phép train bằng CPU (rất chậm; mặc định báo lỗi)')
     ap.add_argument('--seed', type=int, default=42)
     ap.add_argument('--no_pretrained', action='store_true')
     ap.add_argument('--smoke', action='store_true', help='chạy thử: vài ảnh mỗi lớp, 2 epoch')
@@ -99,6 +100,10 @@ def main(argv=None):
 
     seed_everything(a.seed)
     device = get_device(a.device)
+    if device.type == 'cpu' and not (a.smoke or a.allow_cpu):
+        raise SystemExit('LỖI: không thấy GPU (CUDA) nên sẽ phải train bằng CPU, chậm hơn ~30 lần.\n'
+                         'Trên Colab: Runtime -> Change runtime type -> T4 GPU, rồi chạy lại từ đầu.\n'
+                         'Nếu thật sự muốn dùng CPU, thêm --allow_cpu.')
     out = Path(a.out_dir) / run_name(a)
     out.mkdir(parents=True, exist_ok=True)
 
