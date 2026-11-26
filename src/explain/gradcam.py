@@ -52,26 +52,35 @@ class GradCAM:
 
     def remove(self):
         self.h.remove()
+        self._act = None
+        self._grad = None
+        self.model.zero_grad(set_to_none=True)
 
     def __call__(self, x: torch.Tensor, target_class: int | None = None, T: float = 1.0):
         """x: 1x3xHxW đã chuẩn hoá. Trả (heatmap HxW trong [0,1], P_vn[3]). Điểm = log P_vn[c]."""
         dev = next(self.model.parameters()).device
         x = x.to(dev)
-        with torch.enable_grad():
+        try:
+            with torch.enable_grad():
+                self.model.zero_grad(set_to_none=True)
+                logits = self.model(x)
+                P = self.model.vn_probs(logits, T)
+                c = int(P[0].argmax()) if target_class is None else int(target_class)
+                torch.log(P[0, c].clamp_min(1e-12)).backward()
+            A, G = self._act.detach(), self._grad.detach()
+            if self.nhwc:
+                A, G = A.permute(0, 3, 1, 2), G.permute(0, 3, 1, 2)
+            w = G.mean(dim=(2, 3), keepdim=True)
+            cam = F.relu((w * A).sum(1, keepdim=True))
+            cam = F.interpolate(cam, size=x.shape[-2:], mode='bilinear', align_corners=False)[0, 0]
+            cam = cam - cam.min()
+            cam = cam / cam.max() if cam.max() > 0 else cam
+            return cam.cpu().numpy(), P[0].detach().cpu().numpy()
+        finally:
+            # Giải phóng tensor trung gian & gradient ngay sau mỗi ảnh để chống tràn RAM trên CPU server
+            self._act = None
+            self._grad = None
             self.model.zero_grad(set_to_none=True)
-            logits = self.model(x)
-            P = self.model.vn_probs(logits, T)
-            c = int(P[0].argmax()) if target_class is None else int(target_class)
-            torch.log(P[0, c].clamp_min(1e-12)).backward()
-        A, G = self._act.detach(), self._grad.detach()
-        if self.nhwc:
-            A, G = A.permute(0, 3, 1, 2), G.permute(0, 3, 1, 2)
-        w = G.mean(dim=(2, 3), keepdim=True)
-        cam = F.relu((w * A).sum(1, keepdim=True))
-        cam = F.interpolate(cam, size=x.shape[-2:], mode='bilinear', align_corners=False)[0, 0]
-        cam = cam - cam.min()
-        cam = cam / cam.max() if cam.max() > 0 else cam
-        return cam.cpu().numpy(), P[0].detach().cpu().numpy()
 
 
 def overlay(img01: np.ndarray, cam: np.ndarray, alpha: float = 0.45) -> np.ndarray:

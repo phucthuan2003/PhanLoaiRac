@@ -10,7 +10,15 @@ import random
 from pathlib import Path
 from typing import BinaryIO, Union
 
+import numpy as np
 from PIL import Image, ImageOps
+
+try:
+    import pillow_heif  # type: ignore
+
+    pillow_heif.register_heif_opener()  # Hỗ trợ ảnh .HEIC/.HEIF từ iPhone lúc demo
+except ImportError:
+    pass
 
 Image.MAX_IMAGE_PIXELS = None
 IMG_SIZE = 256
@@ -114,3 +122,39 @@ def denormalize(t):
     mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
     std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
     return (t.detach().cpu() * std + mean).clamp(0, 1).permute(1, 2, 0).numpy()
+
+
+def downscale_for_display(img: Image.Image, max_side: int = 1200) -> Image.Image:
+    """Thu nhỏ ảnh 12-48MP từ điện thoại trước khi hiển thị UI để tránh nghẽn RAM/trình duyệt."""
+    w, h = img.size
+    if max(w, h) <= max_side:
+        return img
+    scale = max_side / float(max(w, h))
+    return img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.Resampling.LANCZOS)
+
+
+def assess_image_quality(img: Image.Image) -> dict:
+    """Đánh giá nhanh điều kiện chụp thực tế (thiếu sáng, lóa trắng, mờ mất texture, ảnh quá lớn)."""
+    w, h = img.size
+    # Đo trên bản thu gọn cạnh dài <= 512 để giữ tốc độ < 10ms kể cả với ảnh 48MP
+    probe = downscale_for_display(img, max_side=512).convert('L')
+    gray = np.asarray(probe, dtype=np.float32)
+    brightness = float(gray.mean())
+    overexposed_ratio = float((gray >= 245.0).mean())
+    padded = np.pad(gray, 1, mode='edge')
+    lap = (
+        padded[:-2, 1:-1] + padded[2:, 1:-1] + padded[1:-1, :-2] + padded[1:-1, 2:]
+        - 4.0 * padded[1:-1, 1:-1]
+    )
+    blur_var = float(lap.var())
+    return {
+        'width': w,
+        'height': h,
+        'megapixels': round((w * h) / 1e6, 2),
+        'brightness': round(brightness, 1),
+        'overexposed_ratio': round(overexposed_ratio, 3),
+        'blur_variance': round(blur_var, 1),
+        'is_low_light': brightness < 55.0,
+        'is_overexposed': brightness > 225.0 or overexposed_ratio > 0.35,
+        'is_blurry': blur_var < 60.0,
+    }

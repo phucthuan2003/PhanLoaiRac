@@ -198,12 +198,27 @@ def test_abstention_and_contamination():
 def test_decide_rules():
     labs = fine_labels()
     r = decide(np.array([0.6, 0.2, 0.2]), 0.75)
-    assert r['status'] == 'UNCERTAIN'
+    assert r['status'] == 'UNCERTAIN' and r['uncertain_reason'] == 'low_recycle_conf'
     r = decide(np.array([0.9, 0.05, 0.05]), 0.75)
     assert r['status'] == 'OK' and MSG_CLEAN in r['messages']
+    # Lớp chặn OOD / mơ hồ chung khi bật min_conf > 0
+    r_ood = decide(np.array([0.2, 0.45, 0.35]), 0.75, min_conf=0.60)
+    assert r_ood['status'] == 'UNCERTAIN' and r_ood['uncertain_reason'] == 'low_overall_conf'
+    # Tương thích ngược khi min_conf=0.0 (evaluate.py)
+    r_eval = decide(np.array([0.2, 0.45, 0.35]), 0.75, min_conf=0.0)
+    assert r_eval['status'] == 'OK'
     fp = np.zeros(30); fp[labs.index('aerosol_cans')] = 0.9; fp[0] += 0.1
     r = decide(np.array([0.1, 0.0, 0.9]), 0.75, fp, labs)
     assert r['hazard'] and r['messages'][0] == MSG_HAZARD and r['top_fine'][0]['label'] == 'aerosol_cans'
+
+
+def test_quality_and_downscale():
+    from src.preprocess import assess_image_quality, downscale_for_display
+    dark = Image.new('RGB', (2000, 1000), (15, 15, 15))
+    q = assess_image_quality(dark)
+    assert q['is_low_light'] and q['is_blurry'] and q['megapixels'] == 2.0
+    small = downscale_for_display(dark, max_side=1000)
+    assert small.size == (1000, 500)
 
 
 # ---------------- mô hình (cần torch + timm) ----------------

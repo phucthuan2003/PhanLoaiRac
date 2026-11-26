@@ -19,10 +19,12 @@ def predict_one(model, src, T: float = 1.0, device: str | torch.device = 'cpu'):
     return P, (None if fp is None else fp[0].numpy()), x.cpu()
 
 
-def classify(model, src, temp: dict, device='cpu') -> dict:
+def classify(model, src, temp: dict, device='cpu', tau_override: float | None = None,
+             min_conf: float = 0.0) -> dict:
     """Ảnh -> quyết định đầy đủ theo luật ở src/decision.py."""
     P, fp, x = predict_one(model, src, float(temp['T']), device)
-    out = decide(P, float(temp['tau_recycle']), fp, model.fine_labels if fp is not None else None)
+    tau = float(temp['tau_recycle']) if tau_override is None else float(tau_override)
+    out = decide(P, tau, fp, model.fine_labels if fp is not None else None, min_conf=min_conf)
     out['input_tensor'] = x
     return out
 
