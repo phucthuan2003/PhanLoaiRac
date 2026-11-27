@@ -21,6 +21,7 @@ from app.multi_object import (  # noqa: E402
     detect_and_classify_multi,
     draw_annotated_image,
     load_object_detector,
+    warmup_gpu_models,
 )
 from app.realtime_tab import render_realtime_tab  # noqa: E402
 from src.decision import DEFAULT_MIN_CONF, load_temperature  # noqa: E402
@@ -40,15 +41,36 @@ st.set_page_config(page_title='Phân loại rác 3 nhóm', page_icon='♻️', l
 
 
 @st.cache_resource(show_spinner='Đang nạp mô hình phân loại...')
-def load_model(ckpt: str, temp_path: str):
+def load_model(ckpt: str, temp_path: str, device: str):
     from src.models.net import load_checkpoint
-    model, ck = load_checkpoint(ckpt, map_location='cpu')
+    model, ck = load_checkpoint(ckpt, map_location=device)
+    model = model.to(device).eval()
+    warmup_gpu_models(model, None, device)
     return model, load_temperature(temp_path), ck.get('epoch'), ck.get('val_bal_acc')
 
 
 @st.cache_resource(show_spinner='Đang nạp bộ khoanh vùng nhiều vật thể...')
-def load_detector():
-    return load_object_detector(device='cpu')
+def load_detector(device: str):
+    det = load_object_detector(device=device)
+    if device == 'cuda':
+        import torch
+        with torch.no_grad():
+            for h, w in ((384, 512), (288, 512)):  # 4:3 webcam + 16:9 video
+                _ = det([torch.zeros((3, h, w), device=device, dtype=torch.float32)])
+        torch.cuda.synchronize()
+    return det
+
+
+def resolve_runtime_device(pref: str = 'auto') -> tuple[str, str]:
+    import torch
+
+    if pref == 'auto':
+        use_cuda = torch.cuda.is_available()
+    else:
+        use_cuda = pref == 'cuda' and torch.cuda.is_available()
+    if use_cuda:
+        return 'cuda', f'🚀 GPU: {torch.cuda.get_device_name(0)}'
+    return 'cpu', '💻 CPU'
 
 
 def render_legend_bar() -> None:
@@ -84,6 +106,7 @@ def render_multi_result(
     min_conf: float,
     score_thresh: float,
     show_cam: bool,
+    device: str = 'cpu',
 ) -> None:
     t0 = time.perf_counter()
     items, source = detect_and_classify_multi(
@@ -96,7 +119,7 @@ def render_multi_result(
         score_thresh=score_thresh,
         max_objects=8,
         use_contour_fallback=True,
-        device='cpu',
+        device=device,
     )
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
     annotated = draw_annotated_image(clean_img, items, max_side=1100)
@@ -177,9 +200,10 @@ def render_single_result(
     tau_recycle: float,
     min_conf: float,
     show_cam: bool,
+    device: str = 'cpu',
 ) -> None:
     t0 = time.perf_counter()
-    res = classify(model, raw_bytes, temp, tau_override=tau_recycle, min_conf=min_conf)
+    res = classify(model, raw_bytes, temp, device=device, tau_override=tau_recycle, min_conf=min_conf)
     infer_ms = (time.perf_counter() - t0) * 1000.0
     style_key = 'UNCERTAIN' if res['status'] == 'UNCERTAIN' else res['vn_class']
     s = BIN_STYLE[style_key]
@@ -218,25 +242,35 @@ def main() -> None:
 
     # Clean, minimal sidebar
     default_ckpt = os.environ.get('WASTE_CKPT', str(REPO / 'checkpoints' / 'best_model.pth'))
+    default_dev_pref = os.environ.get('WASTE_DEVICE', 'auto').lower()
+    if default_dev_pref not in ('auto', 'cuda', 'cpu'):
+        default_dev_pref = 'auto'
     with st.sidebar:
         st.header('⚙️ Điều chỉnh nhanh')
         tau_recycle = st.slider('Ngưỡng Tái chế (τ)', 0.45, 0.95, 0.75, 0.01)
         min_conf = st.slider('Chặn vật lạ / mơ hồ', 0.00, 0.85, DEFAULT_MIN_CONF, 0.05)
         det_thresh = st.slider('Độ nhạy khoanh nhiều rác', 0.15, 0.70, 0.30, 0.05)
         show_cam = st.toggle('🔥 Bật Grad-CAM', value=False)
-        with st.expander('🔧 Nâng cao (Checkpoint)', expanded=False):
+        with st.expander('🔧 Nâng cao (Checkpoint & Thiết bị)', expanded=False):
             ckpt = st.text_input('Checkpoint (.pth)', default_ckpt)
             temp_path = st.text_input('temperature.json', str(Path(ckpt).with_name('temperature.json')))
+            dev_pref = st.selectbox(
+                'Thiết bị suy luận',
+                ['auto', 'cuda', 'cpu'],
+                index=['auto', 'cuda', 'cpu'].index(default_dev_pref),
+                format_func=lambda d: {'auto': 'Tự động (ưu tiên GPU)', 'cuda': 'GPU (CUDA)', 'cpu': 'CPU'}[d],
+            )
 
     if not Path(ckpt).exists():
         st.error(f'Không thấy checkpoint: `{ckpt}`')
         st.stop()
 
-    model, temp, ep, vba = load_model(ckpt, temp_path)
-    detector = load_detector()
+    device, device_label = resolve_runtime_device(dev_pref)
+    model, temp, ep, vba = load_model(ckpt, temp_path, device)
+    detector = load_detector(device)
     st.sidebar.caption(
-        f"`{model.backbone_name}` ({model.mode}) · Val `{vba:.1%}` · `T={float(temp['T']):.2f}`"
-        if vba is not None else f"`{model.backbone_name}`"
+        f"{device_label} · `{model.backbone_name}` ({model.mode}) · Val `{vba:.1%}` · `T={float(temp['T']):.2f}`"
+        if vba is not None else f"{device_label} · `{model.backbone_name}`"
     )
 
     tab_img, tab_cam, tab_rt, tab_guide = st.tabs([
@@ -278,9 +312,9 @@ def main() -> None:
             clean_img = load_clean_rgb(raw_bytes)
             render_quality_badges(assess_image_quality(clean_img))
             if detect_mode.startswith('📦'):
-                render_multi_result(model, detector, clean_img, temp, tau_recycle, min_conf, det_thresh, show_cam)
+                render_multi_result(model, detector, clean_img, temp, tau_recycle, min_conf, det_thresh, show_cam, device=device)
             else:
-                render_single_result(model, raw_bytes, clean_img, temp, tau_recycle, min_conf, show_cam)
+                render_single_result(model, raw_bytes, clean_img, temp, tau_recycle, min_conf, show_cam, device=device)
 
     with tab_cam:
         c_cam1, c_cam2 = st.columns([1.2, 1.5])
@@ -297,14 +331,14 @@ def main() -> None:
                 clean_img = load_clean_rgb(b)
                 render_quality_badges(assess_image_quality(clean_img))
                 if cam_mode.startswith('📦'):
-                    render_multi_result(model, detector, clean_img, temp, tau_recycle, min_conf, det_thresh, show_cam)
+                    render_multi_result(model, detector, clean_img, temp, tau_recycle, min_conf, det_thresh, show_cam, device=device)
                 else:
-                    render_single_result(model, b, clean_img, temp, tau_recycle, min_conf, show_cam)
+                    render_single_result(model, b, clean_img, temp, tau_recycle, min_conf, show_cam, device=device)
         else:
             st.info('Gạt **📷 Bật camera chụp ảnh** khi cần dùng (tắt mặc định để không tự mở cam và tránh đụng Tab Realtime).')
 
     with tab_rt:
-        render_realtime_tab(model, detector, temp, tau_recycle, min_conf)
+        render_realtime_tab(model, detector, temp, tau_recycle, min_conf, device=device)
 
     with tab_guide:
         g1, g2, g3 = st.columns(3)
